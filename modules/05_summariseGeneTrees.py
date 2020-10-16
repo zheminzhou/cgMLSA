@@ -34,7 +34,7 @@ def assign_qs(tree) :
 
 def main(input, output, split, n_thread) :
     # run astrid
-    p = subprocess.Popen('{0} {3} -i {1} -o {2}.astrid -c {2}.atid'.format(astrid, input, output).split(), stdout=subprocess.PIPE)
+    p = subprocess.Popen('{0} -i {1} -o {2}.astrid -c {2}.atid'.format(astrid, input, output).split(), stdout=subprocess.PIPE)
     p.communicate()
     if p.returncode > 0 :
         sys.exit(1)

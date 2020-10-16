@@ -129,7 +129,7 @@ def geneDistToBin(data) :
 @click.option('-m', '--model', help='raw or jc [default]', default='jc')
 @click.argument('alignments', nargs=-1)
 def main(profile, outfile, outliers, alignments, model) :
-    pool = Pool(10)
+    pool = Pool(5)
     data = pd.read_csv(profile, delimiter='\t', header=0, dtype=str)
     loci = data.columns
     data = data.values
