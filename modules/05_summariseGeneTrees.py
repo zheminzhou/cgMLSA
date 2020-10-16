@@ -62,7 +62,8 @@ def main(input, output, split, n_thread) :
         if p.returncode > 0 :
             sys.exit(1)
         tre = assign_qs('{0}.astral.{1}'.format(output, i))
-        os.unlink(tfile)
+        if tfile != input :
+            os.unlink(tfile)
         os.unlink('{0}.astral.{1}'.format(output, i))
         for n in tre.traverse('postorder') :
             if not n.is_leaf() :

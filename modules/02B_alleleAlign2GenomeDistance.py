@@ -57,9 +57,9 @@ def geneDist(d) :
             dist[i, :i, 1] = shared
             dist[i, i, 1] = np.sum(p)/2.
         dist[(dist[:, :, 1] < 0.01), :] = 0.01
-        dist[(dist[:, :, 0] < 1e-8), 0] = 1e-8
+        dist[(dist[:, :, 0] < 1e-10), 0] = 1e-10
         if model == 'jc' :
-            raw_d = np.clip(dist[:, :, 0]/dist[:, :, 1], 1e-6, 0.745)
+            raw_d = np.clip(dist[:, :, 0]/dist[:, :, 1], 1e-8, 0.745)
             raw_d = -3. / 4. * np.log(1 - 4 / 3. * raw_d)
             dist[:, :, 0] = dist[:, :, 1]*raw_d
 
@@ -97,10 +97,10 @@ def geneDistToBin(data) :
             dist[i, :i, 1] = shared
             dist[i, i, 1] = np.sum(p)
         dist[(dist[:, :, 1] < 0.01), :] = 0.01
-        dist[(dist[:, :, 0] < 1e-8), 0] = 1e-8
+        dist[(dist[:, :, 0] < 1e-10), 0] = 1e-10
         raw_d = dist[:, :, 0]/dist[:, :, 1]
         if model =='jc' :
-            raw_d = np.clip(raw_d, 1e-6, 0.745)
+            raw_d = np.clip(raw_d, 1e-8, 0.745)
             raw_d = -3./4.*np.log(1-4/3.*raw_d)
         dist[:, :, 0] = dist[:, :, 1]*raw_d + 0.5
         dist[:, :, 1] += 1.
@@ -169,7 +169,6 @@ def main(profile, outfile, outliers, alignments, model) :
         distances[:, :] += dist
     distances[:, 0] += 0.00005
     distances[:, 1] += 0.00010
-    distances = distances[:, 0]/distances[:, 1]
     if outliers:
         bounds = np.load(outfile+'.data.npz')['bounds']
         np.savez_compressed(outfile + '.data.npz', names=genomes, bounds=bounds, dist=distances)
@@ -177,6 +176,7 @@ def main(profile, outfile, outliers, alignments, model) :
     else :
         np.savez_compressed(outfile + '.data.npz', names=genomes, dist=distances)
 
+    distances = distances[:, 0]/distances[:, 1]
     with uopen(outfile, 'w') as fout :
         distances2 = np.zeros([genomes.size, genomes.size], dtype=np.float32)
         for i, n in enumerate(genomes) :
