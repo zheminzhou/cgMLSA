@@ -21,6 +21,7 @@ externals = dict(
     pigz = ['pigz', 'gzip'], 
     astral = 'java -jar Astral/astral.5.15.1.jar',
     astrid = 'ASTRID-linux',
+    erable = 'erable',
 )
 
 def checkExecutable(commands) :
