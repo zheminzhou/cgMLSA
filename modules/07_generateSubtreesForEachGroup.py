@@ -98,7 +98,7 @@ def get_subtrees(data) :
 @click.option('-i', '--trees', help='gene trees', required=True)
 @click.option('-g', '--groups', help='groups', required=True)
 @click.option('-p', '--prefix', help='prefix', required=True)
-@click.option('-r', '--repeats', help='number of sampling per tree', default=10)
+@click.option('-r', '--repeats', help='number of sampling per tree', default=2)
 def main(trees, groups, prefix, repeats) :
     subsets = {}
     with uopen(groups) as fin :

@@ -1,4 +1,5 @@
 import click, pandas as pd, re, numpy as np
+import os, sys, glob
 from ete3 import Tree
 
 
@@ -43,57 +44,60 @@ def getNumber(s, default=0):
 
 @click.command()
 @click.option('-p', '--profile', help='profile', required=True)
+@click.option('-o', '--outfile', help='expended gene trees', required=True)
 @click.option('-m', '--min_dist', help='minimum length for a branch to be kept', default=1e-7)
-@click.argument('treefiles', nargs=-1)
-def main(profile, min_dist, treefiles):
+@click.option('-d', '--folder', help='folder storing gene trees')
+@click.option('-i', '--input_pattern', help='Default: *.aln.fasta.gz.tree', default='*.aln.fasta.gz.tree')
+def main(profile, outfile, min_dist, folder, input_pattern):
+    treefiles = glob.glob(os.path.join(folder, input_pattern))
     data = pd.read_csv(profile, delimiter='\t', header=0, dtype=str)
-    loci = data.columns
+    loci = np.array([ c.rsplit(':', 1)[-1] for c in data.columns], dtype=str)
     data = data.values
     all_genomes = data.T[0]
 
-    for treefile in treefiles:
-        tre = Tree(treefile, format=1)
-        n = tre.get_leaf_names()[0].strip("'").rsplit('_', 1)[0]
-        locId = np.where(loci == n)[0][0]
+    with open(outfile, 'wt') as fout :
+        for treefile in treefiles:
+            tre = Tree(treefile, format=1)
+            n = tre.get_leaf_names()[0].strip("'").rsplit('_', 1)[0]
+            locId = np.where(loci == n)[0][0]
 
-        tags = {}
-        for g, v in zip(all_genomes, data[:, locId]):
-            tag = '{0}_{1}'.format(n, v)
-            if tag not in tags:
-                tags[tag] = [g]
-            else:
-                tags[tag].append(g)
-        labels = {}
-
-        max_node_support = 0.
-        for node in tre.iter_descendants():
-            if not node.is_leaf():
-                s = getNumber(node.name)
-                if s > max_node_support:
-                    max_node_support = s
-
-        max_node_support = 100 if max_node_support > 1 else 1
-        for node in tre.get_descendants('postorder'):
-            if node.is_leaf():
-                n = node.name.strip("'").split()[0]
-                if n in tags:
-                    node.name = '{{{0}}}'.format(n)
-                    genomes = tags[n]
-                    if len(genomes) > 1:
-                        if node.dist < min_dist:
-                            labels[n] = '{0}'.format(','.join(['{0}:{1:.9f}'.format(g, node.dist) for g in genomes]))
-                            node.dist = -1000
-                        else:
-                            labels[n] = '({0}){1}'.format(','.join(['{0}:{1:.9f}'.format(g, min_dist) for g in genomes]), max_node_support)
-                        node.name = '{{{0}}}'.format(n)
-                    else:
-                        node.name = genomes[0]
+            tags = {}
+            for g, v in zip(all_genomes, data[:, locId]):
+                tag = '{0}_{1}'.format(n, v)
+                if tag not in tags:
+                    tags[tag] = [g]
                 else:
-                    tre = delTip(tre, node)
-            elif node.dist < min_dist:
-                tre = delNode(tre, node)
+                    tags[tag].append(g)
+            labels = {}
 
-        with open(treefile+'.expended', 'wt') as fout:
+            max_node_support = 0.
+            for node in tre.iter_descendants():
+                if not node.is_leaf():
+                    s = getNumber(node.name)
+                    if s > max_node_support:
+                        max_node_support = s
+
+            max_node_support = 100 if max_node_support > 1 else 1
+            for node in tre.get_descendants('postorder'):
+                if node.is_leaf():
+                    n = node.name.strip("'").split()[0]
+                    if n in tags:
+                        node.name = '{{{0}}}'.format(n)
+                        genomes = tags[n]
+                        if len(genomes) > 1:
+                            if node.dist < min_dist:
+                                labels[n] = '{0}'.format(','.join(['{0}:{1:.9f}'.format(g, node.dist) for g in genomes]))
+                                node.dist = -1000
+                            else:
+                                labels[n] = '({0}){1}'.format(','.join(['{0}:{1:.9f}'.format(g, min_dist) for g in genomes]), max_node_support)
+                            node.name = '{{{0}}}'.format(n)
+                        else:
+                            node.name = genomes[0]
+                    else:
+                        tre = delTip(tre, node)
+                elif node.dist < min_dist:
+                    tre = delNode(tre, node)
+
             fout.write(re.sub(r':-\d+\.*\d+', '', tre.write(format=1).format(**labels)) + '\n')
 
 

@@ -56,37 +56,21 @@ def get_subgroup(tre, nodes, min_group, max_group) :
             n.up, p.up = t2, t2
     return groups
 
-def assign_dqs(tree) :
-    tre = Tree(tree, format=1, quoted_node_names=True)
-    tre.dqs = 1.
-    for node in tre.iter_descendants('postorder') :
-        qs = re.findall('\[q1=(.+);q2=(.+);q3=(.+)\]', node.name)
-        try :
-            qs = np.array([ float(q)+1e-8 for q in qs[0]])
-            node.dqs = qs[0] - max(qs[1], qs[2])
-            if np.isnan(node.dqs) :
-                node.dqs = 0.
-            node.name = '{0:.2f}'.format(node.dqs)
-        except :
-            try :
-                node.dqs = float(node.name)
-            except :
-                node.dqs = 0.
-    return tre
+
 @click.command()
-@click.option('-i', '--tree', help='tree scored using ASTRAL -t 8', required=True)
+@click.option('-i', '--tree', help='tree scored using ASTRAL', required=True)
 @click.option('-o', '--output', help='sub-groups', required=True)
-@click.option('-v', '--min_dqs', help='min delta quartet support [default: 0.25]', default=0.25, type=float)
+@click.option('-v', '--min_pp', help='min delta quartet support [default: 0.95]', default=0.95, type=float)
 @click.option('-m', '--min_group', help='min size of sub-group [default: 100]', default=100, type=int)
 @click.option('-x', '--max_group', help='max size of sub-group [default: 300]', default=300, type=int)
-def main(tree, output, min_group, max_group, min_dqs) :
-    tre = assign_dqs(tree)
-    nodes = sorted([ [node.dqs, node] for node in tre.traverse('postorder') if node.dqs >= min_dqs ], key=lambda n:-n[0])
+def main(tree, output, min_group, max_group, min_pp) :
+    tre = Tree(tree, format=0, quoted_node_names=True)
+    nodes = sorted([ [node.support, node] for node in tre.get_descendants('postorder') if node.support >= min_pp ], key=lambda n:-n[0])
     groups = get_subgroup(tre, nodes, min_group, max_group)
 
     with uopen(output, 'w') as fout :
         for t in groups :
-            fout.write('{0}\t{1}\t{2:.2f}\t|\t{3}\n'.format(t.tag, len(t.get_leaves()), t.dqs, t.write(format=1)))
+            fout.write('{0}\t{1}\t{2:.2f}\t|\t{3}\n'.format(t.tag, len(t.get_leaves()), t.support, t.write(format=0)))
 
 if __name__ == '__main__' :
     main()

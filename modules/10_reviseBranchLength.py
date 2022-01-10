@@ -27,48 +27,13 @@ def assign_qs(tree) :
             node.d = tuple(sorted([ n for c in node.children for n in c.d ]))
     return tre
 
-def assign_iqr(outfile, tree, genetree, n_split, n_thread) :
-    if n_split <= 1 :
-        geneTrees = [[1, genetree]]
-    else :
-        geneTrees = []
-        with open(genetree) as fin :
-            trees = fin.readlines()
-        for ite in np.arange(n_split) :
-            s_file = outfile + '.split.{0}'.format(ite)
-            with open(s_file, 'wt') as fout :
-                subtrees = trees[ite::n_split]
-                fout.write('\n'.join(subtrees))
-            geneTrees.append([len(subtrees), s_file])
-    # run astral
-    dqs_sum = {}
-    tre = None
-    for i, (num, tfile) in enumerate(geneTrees) :
-        p = subprocess.Popen('{0} -q {1} -i {2} -t 8 -o {3} -T {4}'.format(astral, tree, tfile, outfile+'.astral', n_thread).split(), \
-                             stdout=subprocess.PIPE)
-        p.communicate()
-
-        tre = assign_qs('{0}.astral'.format(outfile))
-        if tfile != genetree :
-            os.unlink(tfile)
-        #os.unlink('{0}.astral'.format(outfile))
-        for n in tre.traverse('postorder') :
-            if not n.is_leaf() :
-                if n.d not in dqs_sum :
-                    dqs_sum[n.d] = [n.qs*num, num]
-                else :
-                    dqs_sum[n.d][0] += n.qs * num
-                    dqs_sum[n.d][1] += num
-    dqs_sum = { k: v[0] / v[1] for k, v in dqs_sum.items() }
-    dqs_sum = { k: int(100*(v[0] - np.max(v[1:]))) for k, v in dqs_sum.items() }
-
-    for n in tre.traverse('postorder') :
-        if not n.is_leaf() :
-            n.name = int(dqs_sum[n.d])
-    tre.set_outgroup(tre.get_midpoint_outgroup())
+def assign_iqr(outfile, tree, genetree, n_thread) :
+    p = subprocess.Popen('{0} -q {1} -i {2} -t 3 -o {3} -T {4}'.format(astral, tree, genetree, outfile+'.astral', n_thread).split(), \
+                         stdout=subprocess.PIPE)
+    p.communicate()
+    tre = Tree(outfile+'.astral', format=0)
     tre.unroot()
-    with open(outfile+'.astral', 'wt') as fout :
-        fout.write(tre.write(format=1)+'\n')
+    tre.write(outfile=outfile+'.astral', format=0)
     return outfile+'.astral'
 
 @click.command()
@@ -76,10 +41,9 @@ def assign_iqr(outfile, tree, genetree, n_split, n_thread) :
 @click.option('-g', '--gene', help='genetrees', required=True)
 @click.option('-d', '--dist', help='distance matrix', required=True)
 @click.option('-o', '--outfile', help='output', required=True)
-@click.option('-s', '--n_split', help='split gene trees into multiple parts for memory efficiency', default=1, type=int)
 @click.option('-n', '--n_thread', help='threads to use', default=8, type=int)
-def main(tree, gene, dist, outfile, n_split, n_thread) :
-    iqr_tree = assign_iqr(outfile, tree, gene, n_split, n_thread)
+def main(tree, gene, dist, outfile, n_thread) :
+    iqr_tree = assign_iqr(outfile, tree, gene, n_thread)
     with uopen(dist) as fin, open(outfile+'.dist', 'wt') as fout :
         header = fin.readline().strip()
         fout.write('1\n\n%genome\n{0} 1000000\n'.format(header))

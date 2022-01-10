@@ -344,11 +344,12 @@ class RunBlast(object) :
                 if method.lower() in tools :
                     blastab.append(tools[method.lower()](ref, qry))
             blastab = [b for b in blastab if b.shape[0] > 0]
+            shutil.rmtree(self.dirPath)
         except :
             import traceback
             print(traceback.print_exc())
         finally :
-            shutil.rmtree(self.dirPath)
+            # shutil.rmtree(self.dirPath)
             if blastab :
                 blastab = np.vstack(blastab)
                 blastab = np.hstack([blastab, np.arange(blastab.shape[0], dtype=int)[:, np.newaxis]])

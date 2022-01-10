@@ -1,4 +1,4 @@
-import os, sys, click, numpy as np, pandas as pd, tempfile
+import os, glob, click, numpy as np, pandas as pd, tempfile
 from numba import njit
 from collections import defaultdict
 from multiprocessing import Pool
@@ -127,11 +127,13 @@ def geneDistToBin(data) :
 @click.option('-o', '--outfile', help='distance file', required=True)
 @click.option('-O', '--outliers', help='remove outliers', is_flag=True, default=False)
 @click.option('-m', '--model', help='raw or jc [default]', default='jc')
-@click.argument('alignments', nargs=-1)
-def main(profile, outfile, outliers, alignments, model) :
+@click.option('-d', '--folder', help='folder storing gene trees')
+@click.option('-i', '--input_pattern', help='Default: *.aln.fasta.gz', default='*.aln.fasta.gz')
+def main(profile, outfile, outliers, folder, input_pattern, model) :
+    alignments = glob.glob(os.path.join(folder, input_pattern))
     pool = Pool(5)
     data = pd.read_csv(profile, delimiter='\t', header=0, dtype=str)
-    loci = data.columns
+    loci = np.array([ c.rsplit(':', 1)[-1] for c in data.columns], dtype=str)
     data = data.values
     genomes = data.T[0]
 

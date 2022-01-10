@@ -1,10 +1,12 @@
-import os, sys, numpy as np, click, re
+import os, glob, click, re
 from ete3 import Tree
 
 @click.command()
 @click.option('-o', 'outfile', help='generated super-tree')
-@click.argument('subtrees', nargs=-1)
-def main(subtrees, outfile) :
+@click.option('-d', '--folder', help='folder storing gene trees', default='.')
+@click.option('-i', '--input_pattern', help='Default: *.__G_*__.astral', default='*.__G_*__.astral')
+def main(folder, input_pattern, outfile) :
+    subtrees = glob.glob(os.path.join(folder, input_pattern))
     trees = [None] * len(subtrees)
     for treefile in subtrees :
         grp = re.findall('__G_(\d+)__', treefile)[0]
