@@ -20,8 +20,8 @@ pip install ete3 numba numpy pandas click
 EToKi also calls the following 3rd party programs for different pipelines:
 
 ~~~~~~~~~~
-Astral
-ASTRID-linux
+Astral (v5.15.1)
+ASTRID (v1.4)
 blastn
 diamond
 erable
